@@ -6,11 +6,11 @@ Demo project for TypeScript test software development.
 
 **CRITICAL: Always create feature branches BEFORE starting work.**
 
-### Branch Naming Convention (3 numbered categories for spec-kit compatibility)
+### Branch Naming Convention
 
 | Range | Purpose | Example |
 |-------|---------|---------|
-| `0xx-name` | Features (spec-kit workflow) | `010-weather-widget` |
+| `0xx-name` | Features | `010-weather-widget` |
 | `3xx-name` | Fixes and polish | `300-ui-polish` |
 | `5xx-name` | Research & POCs (never merge) | `500-experiment` |
 
