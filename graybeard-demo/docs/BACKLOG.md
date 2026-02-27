@@ -6,9 +6,13 @@
 
 ---
 
-> **Next Available: #010**
+> **Next Available: #012**
 
 ## NOW
+
+- [] #011 Push 4 local commits to origin/main and verify GitHub Pages deploy #deploy #ops
+  - 3 lock-delay fixes (#010 v1-v3) + restored pages.yml workflow
+  - Verify: https://0xsalt.github.io/tetris-demo/ loads after push
 
 ## BACKLOG
 
@@ -20,6 +24,7 @@
 
 ## DONE
 
+- [x] #010 Guideline-compliant lock delay — replace sticky flag with dynamic surface check, disable wall kicks, decouple rotation from lock timing #bug #major _done:2026-02-27
 - [x] #009 Infinite spin — rapid rotation near surface resets lock delay indefinitely via gravity clearLockTimer cycle #bug #major _done:2026-02-26
 - [x] #008 Flash row animation renders on shifted positions after splice #bug #minor _done:2026-02-26
 - [x] #007 Add test coverage for collision, rotation, wall kicks, scoring #enhancement _done:2026-02-26
