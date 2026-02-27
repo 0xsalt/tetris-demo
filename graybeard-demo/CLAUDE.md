@@ -58,6 +58,35 @@ git checkout NNN-feature-name
 - **Testing:** Bun test runner
 - **Purpose:** Demo test software
 
+## Deployment (GitHub Pages)
+
+- **Live URL:** https://0xsalt.github.io/tetris-demo/
+- **Workflow:** `.github/workflows/pages.yml` — auto-deploys `src/public/` on push to `main`
+- **Trigger:** Every `git push origin main` triggers the GitHub Actions deploy
+
+### Deploy Steps (after merging to main)
+
+```bash
+# 1. Verify tests pass
+bun test
+
+# 2. Push to origin (triggers GitHub Pages deploy)
+git push origin main
+
+# 3. Verify deployment (wait ~60s for Actions to complete)
+# Check: https://github.com/0xsalt/tetris-demo/actions
+# Then verify live: https://0xsalt.github.io/tetris-demo/
+```
+
+### Workflow Details
+
+The GitHub Actions workflow (`pages.yml`) does:
+1. Checkout repo
+2. Upload `src/public/` as Pages artifact
+3. Deploy to GitHub Pages environment
+
+No build step needed — `src/public/index.html` is a standalone file.
+
 ## Key Decisions
 
 - **Runtime:** Bun (not Node.js) - faster, built-in TypeScript, built-in test runner
