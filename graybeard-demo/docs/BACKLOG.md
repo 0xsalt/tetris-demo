@@ -6,29 +6,54 @@
 
 ---
 
-> **Next Available: #014**
+> **Next Available: #017**
 
 ## NOW
 
 - [] #012 Blocks stop mid-air when rotated near ground (GH#1) #bug #major
-  - Reproduces despite fixes #003, #004, #009, #010
-  - **Triage:** `rotate()` (line 933) accepts in-place rotation without checking lock state.
-    Gravity runs on a `dropInterval` timer (line 1077). Lock timer is 500ms (line 748).
-    When a piece is on surface and player rapidly rotates, `rotate()` changes orientation
-    without calling `updateLockState()` (by design, line 941-942). But the lock timer
-    started by `gravityTick()` / `startLockTimer()` fires during or after a rotation that
-    moved minos to positions no longer on-surface. The timer callback (line 977) only checks
-    `isValid(x, y+1)` — if rotation changed the piece shape such that y+1 is now valid
-    (piece "floats" after rotation), the timer clears itself (line 980) and no new gravity
-    tick comes until the next `dropInterval`. The piece hangs mid-air until the next gravity
-    cycle.
-  - **Root cause:** Lock timer expiry (line 976-982) clears itself when `isValid(x, y+1)`
-    passes after rotation, but doesn't re-engage gravity. The piece floats until the next
-    `dropInterval` tick — which can be up to 1000ms at level 1.
-  - **Proposed fix:** After rotation succeeds (line 939), call `updateLockState()` to
-    re-evaluate surface contact and restart timers appropriately.
+  - **History:** v1 added `updateLockState()` after rotation. v2 added gravity resume
+    (`lastDrop` reset). v3 prevented timer restart on moves (broke Guideline).
+    v4 rewrote as timestamp-based state machine with `lockPhase`/`lockStartTime`.
+    Partially fixed but L piece still walks bottom when spamming rotation.
+  - **Research ref:** `docs/tetris-deep-research.md` (Section 5 lock delay, Section 6 anti-infinity)
+  - **Root cause (per research gap analysis):** Single `updateLockState()` merges timer
+    management and move counting. Two specific bugs remain:
+    1. `descendedToNewLow` via `getLowestMino()` (line 852-858) falsely resets `lockMoves=0`
+       when rotation changes piece shape — L piece rotation 0→1 changes lowest mino from
+       `y+1` to `y+2`, triggering descent reset without actual downward movement.
+    2. Timer restarts on every `updateLockState()` call including gravity steps that should
+       only tick the timer, not restart it.
+  - **Proposed fix (from research):** Split into two functions per research pseudocode:
+    - `onPieceMoveOrRotate()`: if `lockResets < 15`, reset lockTimer, increment lockResets
+    - `updateLockDelay(delta)`: tick timer, check expiry. If not on surface: reset timer + counter
+    - Remove `descendedToNewLow` / `getLowestMino()` tracking — use simpler model where
+      counter resets only when piece leaves surface
 
 ## BACKLOG
+
+- [] #014 Gravity accumulator — while-loop for multiple gravity steps per frame #enhancement #minor
+  - **Research ref:** `docs/tetris-deep-research.md` Section 2.1
+  - Current: `if (timestamp - lastDrop >= dropInterval)` — single step per frame
+  - Research: `while (gravityTimer >= gravityInterval) { movePieceDown(); gravityTimer -= interval; }`
+  - At high levels (67ms interval, 16ms frame), one step per frame works. But at very high
+    levels or on slow devices, multiple steps could be needed per frame.
+  - Accumulator pattern also prevents gravity drift from rounding errors.
+  - **Files:** `src/public/index.html` line 1058-1071 `gravityTick()`
+
+- [] #015 DAS/ARR input handling — replace custom key repeat with proper delayed auto-shift #enhancement #minor
+  - **Research ref:** `docs/tetris-deep-research.md` Section 3.1
+  - Current: custom `setTimeout`-based key repeat (lines 1418-1435) with hardcoded delays
+  - Research: Tetris Guideline DAS (167ms initial delay) + ARR (33ms repeat rate)
+  - Proper DAS/ARR gives consistent, tunable movement speed independent of OS key repeat
+  - Input buffering at high gravity speeds ensures playability
+  - **Files:** `src/public/index.html` key event handlers (lines 1400-1500)
+
+- [] #016 SRS wall kicks — implement kick tables for rotation near surfaces #enhancement #major
+  - Kick table data already exists in `src/game-logic.ts` (KICKS_NORMAL, KICKS_I)
+  - `rotate()` currently does in-place only (line 936-940) — no displacement
+  - Without wall kicks, many rotations fail near surfaces, reducing playability
+  - Previous attempt caused displacement bugs — needs tests-first approach
+  - **Files:** `src/public/index.html` `rotate()`, `src/game-logic.ts` `tryRotate()`
 
 - [] #013 Blocks placed above ceiling (GH#2) #bug #major
   - `isValid()` line 822: `if (boardY < 0) continue` allows minos above row 0
