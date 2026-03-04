@@ -10,25 +10,6 @@
 
 ## NOW
 
-- [] #012 Blocks stop mid-air when rotated near ground (GH#1) #bug #major
-  - **History:** v1 added `updateLockState()` after rotation. v2 added gravity resume
-    (`lastDrop` reset). v3 prevented timer restart on moves (broke Guideline).
-    v4 rewrote as timestamp-based state machine with `lockPhase`/`lockStartTime`.
-    Partially fixed but L piece still walks bottom when spamming rotation.
-  - **Research ref:** `docs/tetris-deep-research.md` (Section 5 lock delay, Section 6 anti-infinity)
-  - **Root cause (per research gap analysis):** Single `updateLockState()` merges timer
-    management and move counting. Two specific bugs remain:
-    1. `descendedToNewLow` via `getLowestMino()` (line 852-858) falsely resets `lockMoves=0`
-       when rotation changes piece shape — L piece rotation 0→1 changes lowest mino from
-       `y+1` to `y+2`, triggering descent reset without actual downward movement.
-    2. Timer restarts on every `updateLockState()` call including gravity steps that should
-       only tick the timer, not restart it.
-  - **Proposed fix (from research):** Split into two functions per research pseudocode:
-    - `onPieceMoveOrRotate()`: if `lockResets < 15`, reset lockTimer, increment lockResets
-    - `updateLockDelay(delta)`: tick timer, check expiry. If not on surface: reset timer + counter
-    - Remove `descendedToNewLow` / `getLowestMino()` tracking — use simpler model where
-      counter resets only when piece leaves surface
-
 ## BACKLOG
 
 - [] #014 Gravity accumulator — while-loop for multiple gravity steps per frame #enhancement #minor
@@ -55,15 +36,12 @@
   - Previous attempt caused displacement bugs — needs tests-first approach
   - **Files:** `src/public/index.html` `rotate()`, `src/game-logic.ts` `tryRotate()`
 
-- [] #013 Blocks placed above ceiling (GH#2) #bug #major
-  - `isValid()` line 822: `if (boardY < 0) continue` allows minos above row 0
-  - `lockPiece()` line 1006: skips out-of-bounds minos — they vanish instead of blocking
-  - Needs bounds enforcement or game-over trigger when locking above visible area
-
 ## ROADMAP
 
 ## DONE
 
+- [x] #013 Blocks placed above ceiling (GH#2) — bounds check in isValid() #bug #major _done:2026-03-03
+- [x] #012 Blocks stop mid-air when rotated near ground (GH#1) — v5 lock delay split #bug #major _done:2026-03-03
 - [x] #011 Push local commits to origin/main and verify GitHub Pages deploy #deploy #ops _done:2026-03-02
 - [x] #010 Guideline-compliant lock delay — replace sticky flag with dynamic surface check, disable wall kicks, decouple rotation from lock timing #bug #major _done:2026-02-27
 - [x] #009 Infinite spin — rapid rotation near surface resets lock delay indefinitely via gravity clearLockTimer cycle #bug #major _done:2026-02-26
